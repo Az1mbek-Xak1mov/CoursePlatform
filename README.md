@@ -94,7 +94,41 @@ uv run ruff format .
 
 ## Production Deployment
 
-### Environment Variables
+### Automatic CI/CD Deployment
+
+This project uses GitHub Actions for automatic deployment. On every push to `master`:
+
+1. Tests run automatically
+2. If tests pass, code deploys to your server
+3. Static files are collected
+4. Migrations run
+5. Application restarts
+
+### Setting up CI/CD
+
+1. **Add GitHub Secrets** (Settings → Secrets → Actions):
+   - `SERVER_IP` - Your server IP address
+   - `SERVER_USER` - SSH username (usually `root` or `www-data`)
+   - `SSH_PRIVATE_KEY` - Your private SSH key
+
+2. **Initial Server Setup** (run once on your server):
+```bash
+# Download and run setup script
+curl -O https://raw.githubusercontent.com/Az1mbek-Xak1mov/CoursePlatform/master/scripts/server_setup.sh
+chmod +x server_setup.sh
+sudo ./server_setup.sh YOUR_SERVER_IP
+```
+
+3. **Generate SSH key** (on your local machine):
+```bash
+ssh-keygen -t ed25519 -C "github-actions"
+# Add public key to server's ~/.ssh/authorized_keys
+# Add private key to GitHub Secrets as SSH_PRIVATE_KEY
+```
+
+### Manual Deployment
+
+#### Environment Variables
 
 Set these in your production environment:
 
@@ -105,12 +139,12 @@ ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 ```
 
-### Running with Gunicorn:
+#### Running with Gunicorn:
 ```bash
 uv run gunicorn CoursePlatform.wsgi:application --bind 0.0.0.0:8000
 ```
 
-### Collect static files:
+#### Collect static files:
 ```bash
 uv run python manage.py collectstatic --noinput
 ```

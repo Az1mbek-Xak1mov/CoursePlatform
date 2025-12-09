@@ -1,0 +1,72 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  PROJECT_NAME: ilmspace
+  PROJECT_PATH: /var/www/ilmspace
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Dependencies
+        run: uv sync --frozen
+
+      - name: Run Django Checks
+        run: uv run python manage.py check
+        env:
+          DEBUG: 'True'
+          SECRET_KEY: 'test-secret-key-for-ci'
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            
+            # Navigate to project directory
+            cd ${{ env.PROJECT_PATH }}
+            
+            # Pull latest code
+            git pull origin master
+            
+            # Install/update dependencies with uv
+            uv sync --frozen
+            
+            # Collect static files
+            uv run python manage.py collectstatic --noinput
+            
+            # Run migrations
+            uv run python manage.py migrate --noinput
+            
+            # Restart application
+            sudo systemctl restart ilmspace
+            sudo systemctl restart nginx
+            
+            echo "✅ Deployment completed successfully!"
