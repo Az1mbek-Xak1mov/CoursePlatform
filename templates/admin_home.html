@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="background: var(--gradient-success); color: white;">
+    <div class="container">
+        <h1 class="animate-fade-in">Admin Dashboard</h1>
+        <p class="text-lg">Platform overview and moderation</p>
+
+        <!-- Platform Stats -->
+        <div class="grid grid-4 mt-6 gap-4">
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ total_users }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Total Users</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ total_courses }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Total Courses</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ pending_moderations }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Pending Reviews</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ total_revenue|floatformat:0 }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Revenue (UZS)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-8">
+    <!-- Moderation Queue -->
+    <section class="mb-8 animate-fade-in">
+        <div class="flex justify-between items-center mb-4">
+            <h2>Courses Pending Review</h2>
+            {% if pending_courses %}
+            <span class="badge badge-warning">{{ pending_courses|length }} pending</span>
+            {% endif %}
+        </div>
+
+        {% if pending_courses %}
+        <div class="grid grid-2">
+            {% for course in pending_courses %}
+            <div class="card">
+                <div class="flex gap-4">
+                    {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}"
+                        style="width: 120px; height: 80px; object-fit: cover; border-radius: var(--radius-md);">
+                    {% else %}
+                    <div
+                        style="width: 120px; height: 80px; background: var(--gradient-primary); border-radius: var(--radius-md);">
+                    </div>
+                    {% endif %}
+
+                    <div class="flex-1">
+                        <h4 class="font-semibold mb-2">{{ course.title }}</h4>
+                        <p class="text-sm text-muted mb-2">By {{ course.author.get_full_name }}</p>
+                        <p class="text-sm text-muted">Submitted: {{ course.created_at|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <a href="/moderation/course/{{ course.id }}/" class="btn btnprimary btn-sm flex-1">Review</a>
+                    <a href="/courses/{{ course.slug }}/" class="btn btn-ghost btn-sm flex-1">Preview</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card text-center p-6">
+            <p class="text-muted">✅ No courses pending review</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent Transactions -->
+    <section class="mb-8 animate-slide-in">
+        <h2 class="mb-4">Recent Transactions</h2>
+
+        {% if recent_transactions %}
+        <div class="card">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">ID</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Date</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Type</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Amount</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in recent_transactions %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: var(--space-3); font-family: var(--font-mono); font-size: 0.75rem;">{{
+                            transaction.transaction_id|truncatechars:12 }}</td>
+                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{
+                            transaction.created_at|date:"M d, H:i" }}</td>
+                        <td style="padding: var(--space-3);">{{ transaction.get_transaction_type_display }}</td>
+                        <td style="padding: var(--space-3); font-weight: 600;">{{ transaction.amount|floatformat:0 }}
+                            UZS</td>
+                        <td style="padding: var(--space-3);">
+                            {% if transaction.status == 'SUCCESS' %}
+                            <span class="badge badge-success">Success</span>
+                            {% elif transaction.status == 'PENDING' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                            <span class="badge badge-danger">{{ transaction.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card text-center p-6">
+            <p class="text-muted">No recent transactions</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="animate-fade-in">
+        <h2 class="mb-4">Quick Actions</h2>
+        <div class="grid grid-4">
+            <a href="/admin/" class="card text-center" style="text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚙️</div>
+                <h4 class="font-semibold">Django Admin</h4>
+            </a>
+            <a href="/moderation/" class="card text-center" style="text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">✅</div>
+                <h4 class="font-semibold">Moderation</h4>
+            </a>
+            <a href="/users/" class="card text-center" style="text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">👥</div>
+                <h4 class="font-semibold">Manage Users</h4>
+            </a>
+            <a href="/reports/" class="card text-center" style="text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">📊</div>
+                <h4 class="font-semibold">Reports</h4>
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

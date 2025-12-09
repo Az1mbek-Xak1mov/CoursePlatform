@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Course Builder - {{ course.title }} - IlmSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: var(--space-6);
+    }
+
+    .tab {
+        padding: var(--space-3) var(--space-5);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        transition: all var(--transition-fast);
+        font-weight: 500;
+    }
+
+    .tab.active {
+        border-bottom-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s;
+    }
+
+    .module-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: var(--space-4);
+        margin-bottom: var(--space-3);
+    }
+
+    .lesson-item {
+        background: var(--bg-secondary);
+        padding: var(--space-3);
+        border-radius: var(--radius-sm);
+        margin: var(--space-2) 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        padding: var(--space-6);
+        border-radius: var(--radius-lg);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .form-input,
+    .form-textarea {
+        width: 100%;
+        padding: var(--space-3);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1>{{ course.title }}</h1>
+            <div class="flex items-center gap-3 mt-2">
+                <span class="badge badge-{{ course.status|lower }}">{{ course.get_status_display }}</span>
+                <span class="text-muted">Last updated: {{ course.updated_at|date:"M d, Y" }}</span>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'author_home' %}" class="btn btn-ghost">← Back</a>
+            {% if course.status == 'DRAFT' %}
+            <form method="post" action="{% url 'course_publish' course.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success"
+                    onclick="return confirm('Submit this course for review?')">Submit for Review</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tabs-->
+    <div class="tabs">
+        <div class="tab active" data-tab="info">📝 Course Info</div>
+        <div class="tab" data-tab="modules">📚 Modules ({{ course.modules.count }})</div>
+        <div class="tab" data-tab="lessons">🎥 Lessons</div>
+    </div>
+
+    <!-- Tab: Course Info -->
+    <div class="tab-content active" id="info-content">
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3>Course Information</h3>
+                <a href="{% url 'course_edit' course.id %}" class="btn btn-secondary">Edit Info</a>
+            </div>
+
+            <div class="grid grid-2 gap-4">
+                <div>
+                    <strong>Price:</strong> {{ course.price }} UZS
+                </div>
+                <div>
+                    <strong>Level:</strong> {{ course.get_level_display }}
+                </div>
+                <div>
+                    <strong>Language:</strong> {{ course.get_language_display }}
+                </div>
+                <div>
+                    <strong>Categories:</strong>
+                    {% for category in course.categories.all %}
+                    <span class="badge badge-info">{{ category.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <strong>Description:</strong>
+                <p>{{ course.description|truncatewords:50 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Modules -->
+    <div class="tab-content" id="modules-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3>Course Modules</h3>
+            <button class="btn btn-primary" onclick="showAddModuleModal()">+ Add Module</button>
+        </div>
+
+        <div id="modules-list">
+            {% for module in modules %}
+            <div class="module-item" data-module-id="{{ module.id }}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h4>{{ forloop.counter }}. {{ module.title }}</h4>
+                        <p class="text-muted">{{ module.description|default:"No description" }}</p>
+                        <span class="text-sm text-muted">{{ module.lessons.count }} lessons</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-ghost"
+                            onclick="editModule({{ module.id }}, '{{ module.title|escapejs }}', '{{ module.description|escapejs }}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteModule({{ module.id }})">Delete</button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="card text-center p-6">
+                <p class="text-muted">No modules yet. Add your first module to get started!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Tab: Lessons -->
+    <div class="tab-content" id="lessons-content">
+        <h3 class="mb-4">Course Lessons</h3>
+
+        {% for module in modules %}
+        <div class="module-item">
+            <div class="flex justify-between items-center mb-3">
+                <h4>{{ forloop.counter }}. {{ module.title }}</h4>
+                <button class="btn btn-sm btn-primary"
+                    onclick="showAddLessonModal({{ module.id }}, '{{ module.title|escapejs }}')">+ Add Lesson</button>
+            </div>
+
+            <div class="lessons-list" id="lessons-{{ module.id }}">
+                {% for lesson in module.lessons.all %}
+                <div class="lesson-item">
+                    <div>
+                        <strong>{{ lesson.title }}</strong>
+                        <span class="text-muted"> — {{ lesson.duration_minutes }} min</span>
+                        {% if lesson.is_preview %}
+                        <span class="badge badge-success" Free Preview</span>
+                            {% endif %}
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-ghost" onclick="editLesson({{ lesson.id }})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLesson({{ lesson.id }})">Delete</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-sm">No lessons in this module yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="card text-center p-6">
+            <p class="text-muted">Add modules first, then you can add lessons to them.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add/Edit Module Modal -->
+<div id="moduleModal" class="modal">
+    <div class="modal-content">
+        <h3 id="moduleModalTitle">Add Module</h3>
+        <form id="moduleForm">
+            {% csrf_token %}
+            <input type="hidden" id="moduleId" value="">
+            <label class="form-label">Module Title *</label>
+            <input type="text" id="moduleTitle" class="form-input" required>
+
+            <label class="form-label">Description</label>
+            <textarea id="moduleDescription" class="form-textarea" rows="3"></textarea>
+
+            <div class="flex gap-3 mt-4">
+                <button type="submit" class="btn btn-primary">Save Module</button>
+                <button type="button" class="btn btn-ghost" onclick="closeModuleModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add/Edit Lesson Modal -->
+<div id="lessonModal" class="modal">
+    <div class="modal-content">
+        <h3 id="lessonModalTitle">Add Lesson</h3>
+        <form id="lessonForm">
+            {% csrf_token %}
+            <input type="hidden" id="lessonId" value="">
+            <input type="hidden" id="lessonModuleId" value="">
+
+            <label class="form-label">Lesson Title *</label>
+            <input type="text" id="lessonTitle" class="form-input" required>
+
+            <label class="form-label">Description</label>
+            <textarea id="lessonDescription" class="form-textarea" rows="2"></textarea>
+
+            <label class="form-label">Video URL *</label>
+            <input type="url" id="lessonVideoUrl" class="form-input" placeholder="https://vimeo.com/..." required>
+
+            <label class="form-label">Duration (minutes) *</label>
+            <input type="number" id="lessonDuration" class="form-input" min="1" required>
+
+            <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="lessonIsPreview">
+                <span>Allow free preview</span>
+            </label>
+
+            <div class="flex gap-3 mt-4">
+                <button type="submit" class="btn btn-primary">Save Lesson</button>
+                <button type="button" class="btn btn-ghost" onclick="closeLessonModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab + '-content').classList.add('active');
+        });
+    });
+
+    // Module functions
+    function showAddModuleModal() {
+        document.getElementById('moduleModalTitle').textContent = 'Add Module';
+        document.getElementById('moduleId').value = '';
+        document.getElementById('moduleTitle').value = '';
+        document.getElementById('moduleDescription').value = '';
+        document.getElementById('moduleModal').classList.add('show');
+    }
+
+    function editModule(id, title, description) {
+        document.getElementById('moduleModalTitle').textContent = 'Edit Module';
+        document.getElementById('moduleId').value = id;
+        document.getElementById('moduleTitle').value = title;
+        document.getElementById('moduleDescription').value = description;
+        document.getElementById('moduleModal').classList.add('show');
+    }
+
+    function closeModuleModal() {
+        document.getElementById('moduleModal').classList.remove('show');
+    }
+
+    document.getElementById('moduleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const moduleId = document.getElementById('moduleId').value;
+        const title = document.getElementById('moduleTitle').value;
+        const description = document.getElementById('moduleDescription').value;
+
+        const url = moduleId ? `/courses/modules/${moduleId}/edit/` : `/courses/{{ course.id }}/modules/add/`;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('title', title);
+        formData.append('description', description);
+
+        try {
+            const response = await fetch(url, { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                location.reload();
+            }
+        } catch (error) {
+            alert('Error saving module');
+        }
+    });
+
+    async function deleteModule(id) {
+        if (!confirm('Delete this module and all its lessons?')) return;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        const response = await fetch(`/courses/modules/${id}/delete/`, { method: 'POST', body: formData });
+        if (response.ok) location.reload();
+    }
+
+    // Lesson functions
+    function showAddLessonModal(moduleId, moduleTitle) {
+        document.getElementById('lessonModalTitle').textContent = `Add Lesson to ${moduleTitle}`;
+        document.getElementById('lessonId').value = '';
+        document.getElementById('lessonModuleId').value = moduleId;
+        document.getElementById('lessonTitle').value = '';
+        document.getElementById('lessonDescription').value = '';
+        document.getElementById('lessonVideoUrl').value = '';
+        document.getElementById('lessonDuration').value = '';
+        document.getElementById('lessonIsPreview').checked = false;
+        document.getElementById('lessonModal').classList.add('show');
+    }
+
+    function closeLessonModal() {
+        document.getElementById('lessonModal').classList.remove('show');
+    }
+
+    document.getElementById('lessonForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const lessonId = document.getElementById('lessonId').value;
+        const moduleId = document.getElementById('lessonModuleId').value;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('title', document.getElementById('lessonTitle').value);
+        formData.append('description', document.getElementById('lessonDescription').value);
+        formData.append('video_url', document.getElementById('lessonVideoUrl').value);
+        formData.append('duration_minutes', document.getElementById('lessonDuration').value);
+        formData.append('is_preview', document.getElementById('lessonIsPreview').checked);
+
+        const url = lessonId ? `/courses/lessons/${lessonId}/edit/` : `/courses/modules/${moduleId}/lessons/add/`;
+
+        try {
+            const response = await fetch(url, { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) location.reload();
+        } catch (error) {
+            alert('Error saving lesson');
+        }
+    });
+
+    async function deleteLesson(id) {
+        if (!confirm('Delete this lesson?')) return;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        const response = await fetch(`/courses/lessons/${id}/delete/`, { method: 'POST', body: formData });
+        if (response.ok) location.reload();
+    }
+</script>
+{% endblock %}

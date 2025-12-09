@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Courses - IlmSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filters-sidebar {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        position: sticky;
+        top: 100px;
+    }
+    
+    .filter-section {
+        margin-bottom: var(--space-5);
+    }
+    
+    .filter-section h4 {
+        margin-bottom: var(--space-3);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+    }
+    
+    .filter-option {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) 0;
+        cursor: pointer;
+        transition: color var(--transition-fast);
+    }
+    
+    .filter-option:hover {
+        color: var(--primary);
+    }
+    
+    .filter-option.active {
+        color: var(--primary);
+        font-weight: 600;
+    }
+    
+    .filter-option input[type="radio"],
+    .filter-option input[type="checkbox"] {
+        accent-color: var(--primary);
+    }
+    
+    .course-count {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+    
+    .search-bar {
+        display: flex;
+        gap: var(--space-3);
+        margin-bottom: var(--space-5);
+    }
+    
+    .search-bar input {
+        flex: 1;
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+    }
+    
+    .search-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    
+    .sort-dropdown {
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--bg-primary);
+        font-size: 0.9rem;
+    }
+    
+    .results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+    }
+    
+    .course-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--space-5);
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: var(--space-8);
+    }
+    
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
+    }
+    
+    .filter-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-1) var(--space-3);
+        background: var(--primary-light-bg);
+        color: var(--primary);
+        border-radius: var(--radius-full);
+        font-size: 0.85rem;
+    }
+    
+    .filter-tag a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-8">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="animate-fade-in">Browse Courses</h1>
+        <p class="text-muted">Discover courses to advance your skills</p>
+    </div>
+    
+    <!-- Search Bar -->
+    <form method="get" class="search-bar">
+        <input type="text" name="q" placeholder="Search courses..." value="{{ search_query|default:'' }}">
+        {% if selected_category %}
+        <input type="hidden" name="category" value="{{ selected_category.slug }}">
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    
+    <!-- Active Filters -->
+    {% if search_query or selected_category or selected_level or selected_price %}
+    <div class="active-filters">
+        {% if search_query %}
+        <span class="filter-tag">
+            "{{ search_query }}" <a href="?{% if selected_category %}category={{ selected_category.slug }}{% endif %}">×</a>
+        </span>
+        {% endif %}
+        {% if selected_category %}
+        <span class="filter-tag">
+            {{ selected_category.name }} <a href="?{% if search_query %}q={{ search_query }}{% endif %}">×</a>
+        </span>
+        {% endif %}
+        {% if selected_level %}
+        <span class="filter-tag">
+            {{ selected_level }} <a href="?{% if search_query %}q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}">×</a>
+        </span>
+        {% endif %}
+        {% if selected_price %}
+        <span class="filter-tag">
+            {{ selected_price|title }} <a href="?{% if search_query %}q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}">×</a>
+        </span>
+        {% endif %}
+        <a href="{% url 'course_list' %}" class="text-sm text-primary">Clear all</a>
+    </div>
+    {% endif %}
+    
+    <div class="grid" style="grid-template-columns: 280px 1fr; gap: var(--space-6);">
+        <!-- Filters Sidebar -->
+        <aside class="filters-sidebar">
+            <div class="filter-section">
+                <h4>Categories</h4>
+                {% for category in categories %}
+                <label class="filter-option {% if selected_category.slug == category.slug %}active{% endif %}">
+                    <a href="?category={{ category.slug }}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">
+                        {% if category.icon and 'http' in category.icon %}
+                        <img src="{{ category.icon }}" alt="" style="width: 20px; height: 20px; margin-right: 8px;">
+                        {% else %}
+                        <span style="margin-right: 8px;">{{ category.icon|default:'📁' }}</span>
+                        {% endif %}
+                        {{ category.name }}
+                        <span class="course-count">{{ category.course_count }}</span>
+                    </a>
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div class="filter-section">
+                <h4>Level</h4>
+                <label class="filter-option {% if selected_level == 'BEGINNER' %}active{% endif %}">
+                    <a href="?level=BEGINNER{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit;">
+                        🌱 Beginner
+                    </a>
+                </label>
+                <label class="filter-option {% if selected_level == 'INTERMEDIATE' %}active{% endif %}">
+                    <a href="?level=INTERMEDIATE{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit;">
+                        🌿 Intermediate
+                    </a>
+                </label>
+                <label class="filter-option {% if selected_level == 'ADVANCED' %}active{% endif %}">
+                    <a href="?level=ADVANCED{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit;">
+                        🌳 Advanced
+                    </a>
+                </label>
+            </div>
+            
+            <div class="filter-section">
+                <h4>Price</h4>
+                <label class="filter-option {% if selected_price == 'free' %}active{% endif %}">
+                    <a href="?price=free{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit;">
+                        🆓 Free
+                    </a>
+                </label>
+                <label class="filter-option {% if selected_price == 'paid' %}active{% endif %}">
+                    <a href="?price=paid{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" style="text-decoration: none; color: inherit;">
+                        💰 Paid
+                    </a>
+                </label>
+            </div>
+        </aside>
+        
+        <!-- Course Grid -->
+        <main>
+            <div class="results-info">
+                <span class="text-muted">{{ courses|length }} courses found</span>
+                <select class="sort-dropdown" onchange="window.location.href='?sort=' + this.value + '{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}'">
+                    <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest</option>
+                    <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>Most Popular</option>
+                    <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Highest Rated</option>
+                    <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                </select>
+            </div>
+            
+            {% if courses %}
+            <div class="course-grid">
+                {% for course in courses %}
+                <a href="{% url 'course_detail' slug=course.slug %}" class="course-card" style="text-decoration: none;">
+                    {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-card-image">
+                    {% else %}
+                    <div class="course-card-image" style="background: var(--gradient-primary);"></div>
+                    {% endif %}
+                    
+                    <div class="course-card-content">
+                        <div class="flex gap-2 mb-2">
+                            {% for cat in course.categories.all|slice:":2" %}
+                            <span class="badge badge-primary" style="font-size: 0.7rem;">{{ cat.name }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <h3 class="course-card-title">{{ course.title }}</h3>
+                        <p class="course-card-author">{{ course.author.get_full_name }}</p>
+                        
+                        <div class="course-card-footer">
+                            <div class="flex items-center gap-2">
+                                <span class="text-warning">★</span>
+                                <span class="text-sm font-semibold">{{ course.average_rating|floatformat:1 }}</span>
+                                <span class="text-sm text-muted">({{ course.review_count }})</span>
+                            </div>
+                            {% if course.price > 0 %}
+                            <div class="text-lg font-bold text-primary">{{ course.price|floatformat:0 }} UZS</div>
+                            {% else %}
+                            <div class="text-lg font-bold text-success">Free</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-results card">
+                <div style="font-size: 4rem; margin-bottom: var(--space-4);">🔍</div>
+                <h3>No courses found</h3>
+                <p class="text-muted mb-4">Try adjusting your filters or search query</p>
+                <a href="{% url 'course_list' %}" class="btn btn-primary">View All Courses</a>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Author Dashboard - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="background: var(--gradient-accent); color: white;">
+    <div class="container">
+        <h1 class="animate-fade-in">Author Dashboard</h1>
+        <p class="text-lg">Manage your courses and track your success</p>
+
+        <!-- Financial Stats -->
+        <div class="grid grid-4 mt-6 gap-4">
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ available_balance|floatformat:0 }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Available (UZS)</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ total_students }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Total Students</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ active_courses }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Active Courses</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ average_rating|floatformat:1 }}★</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Average Rating</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex gap-4 mt-6">
+            <a href="{% url 'course_create' %}" class="btn btn-lg" style="background: white; color: var(--primary);">
+                + Create New Course
+            </a>
+            <a href="#" class="btn btn-lg btn-ghost" style="border: 2px solid white; color: white;">
+                💰 Request Payout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-8">
+    <!-- My Courses -->
+    <section class="mb-8animate-fade-in">
+        <h2 class="mb-4">My Courses</h2>
+
+        {% if courses %}
+        <div class="grid grid-3">
+            {% for course in courses %}
+            <div class="course-card">
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-card-image">
+                {% else %}
+                <div class="course-card-image"></div>
+                {% endif %}
+
+                <div class="course-card-content">
+                    <!-- Status Badge -->
+                    <div class="mb-3">
+                        {% if course.status == 'PUBLISHED' %}
+                        <span class="badge badge-success">Published</span>
+                        {% elif course.status == 'PENDING' %}
+                        <span class="badge badge-warning">Pending Review</span>
+                        {% elif course.status == 'DRAFT' %}
+                        <span class="badge badge-info">Draft</span>
+                        {% elif course.status == 'REJECTED' %}
+                        <span class="badge badge-danger">Rejected</span>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="course-card-title">{{ course.title }}</h3>
+
+                    <!-- Course Stats -->
+                    <div class="grid grid-2 gap-3 mb-3">
+                        <div>
+                            <div class="text-sm text-muted">Students</div>
+                            <div class="font-semibold">{{ course.enrollment_count }}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-muted">Rating</div>
+                            <div class="font-semibold">{{ course.average_rating|floatformat:1 }}★</div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-4">
+                        <a href="{% url 'course_builder' course.id %}"
+                            class="btn btn-secondary btn-sm flex-1">Manage</a>
+                        <a href="/courses/{{ course.slug }}/" class="btn btn-ghost btn-sm flex-1">View</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card text-center p-8">
+            <h3 class="mb-3">You haven't created any courses yet</h3>
+            <p class="text-muted mb-4">Start sharing your knowledge with students around the world</p>
+            <a href="/courses/create/" class="btn btn-primary btn-lg">Create Your First Course</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent Sales -->
+    <section class="animate-slide-in">
+        <h2 class="mb-4">Recent Sales</h2>
+
+        {% if recent_sales %}
+        <div class="card">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Date</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Course</th>
+                        <th style="text-align: left; padding: var(--space-3); font-weight: 600;">Student</th>
+                        <th style="text-align: right; padding: var(--space-3); font-weight: 600;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in recent_sales %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.created_at|date:"M d,
+                            Y" }}</td>
+                        <td style="padding: var(--space-3);">{{ sale.course.title }}</td>
+                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.student.get_full_name
+                            }}</td>
+                        <td style="padding: var(--space-3); text-align: right; font-weight: 600;">{{
+                            sale.price_paid|floatformat:0 }} UZS</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card text-center p-6">
+            <p class="text-muted">No sales yet. Keep creating great content!</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

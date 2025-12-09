@@ -1,0 +1,74 @@
+[project]
+name = "ilmspace"
+version = "1.0.0"
+description = "IlmSpace - Educational Course Platform for Uzbekistan"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "IlmSpace Team" }
+]
+keywords = ["education", "courses", "django", "uzbekistan"]
+
+dependencies = [
+    "django>=5.1",
+    "django-jazzmin>=3.0.0",
+    "pillow>=11.0.0",
+    "python-dotenv>=1.0.0",
+    "gunicorn>=23.0.0",
+    "whitenoise>=6.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "django-debug-toolbar>=4.4.0",
+    "pytest>=8.0.0",
+    "pytest-django>=4.9.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "pre-commit>=4.0.0",
+]
+prod = [
+    "psycopg[binary]>=3.2.0",
+    "django-storages>=1.14.0",
+    "boto3>=1.35.0",
+    "sentry-sdk>=2.19.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "django-debug-toolbar>=4.4.0",
+    "pytest>=8.0.0",
+    "pytest-django>=4.9.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "pre-commit>=4.0.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "DJ",  # flake8-django
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["users", "authors", "students", "courses", "payments", "moderation"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "CoursePlatform.settings"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --tb=short"

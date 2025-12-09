@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="background: var(--gradient-primary); color: white;">
+    <div class="container">
+        <h1 class="animate-fade-in">Welcome back, {{ user.get_full_name|default:'Student' }}! 👋</h1>
+        <p class="text-lg">Continue your learning journey</p>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-4 mt-6 gap-4">
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ enrolled_count }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Enrolled Courses</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ completed_count }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Completed</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ total_hours }}h</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Watch Time</div>
+            </div>
+            <div class="stat-card"
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="stat-value" style="color: white;">{{ certificates_count }}</div>
+                <div class="stat-label" style="color: rgba(255,255,255,0.8);">Certificates</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-8">
+    <!-- Continue Learning -->
+    {% if in_progress_courses %}
+    <section class="mb-8 animate-fade-in">
+        <h2 class="mb-4">Continue Learning</h2>
+        <div class="grid grid-3">
+            {% for enrollment in in_progress_courses %}
+            <div class="course-card">
+                {% if enrollment.course.thumbnail %}
+                <img src="{{ enrollment.course.thumbnail.url }}" alt="{{ enrollment.course.title }}"
+                    class="course-card-image">
+                {% else %}
+                <div class="course-card-image"></div>
+                {% endif %}
+
+                <div class="course-card-content">
+                    <h3 class="course-card-title">{{ enrollment.course.title }}</h3>
+                    <p class="course-card-author">{{ enrollment.course.author.get_full_name }}</p>
+
+                    <!-- Progress -->
+                    <div class="mb-3">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-sm text-muted">Progress</span>
+                            <span class="text-sm font-semibold">{{ enrollment.progress_percentage }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ enrollment.progress_percentage }}%"></div>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'course_learn' slug=enrollment.course.slug %}" class="btn btn-primary btn-sm"
+                        style="width: 100%;">Continue</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Browse Courses -->
+    <section class="mb-8 animate-slide-in">
+        <div class="flex justify-between items-center mb-4">
+            <h2>Recommended for You</h2>
+            <a href="{% url 'course_list' %}" class="btn btn-ghost">View All →</a>
+        </div>
+
+        <div class="grid grid-4">
+            {% for course in recommended_courses %}
+            <a href="{% url 'course_detail' slug=course.slug %}" class="course-card" style="text-decoration: none;">
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-card-image">
+                {% else %}
+                <div class="course-card-image" style="background: var(--gradient-primary);"></div>
+                {% endif %}
+
+                <div class="course-card-content">
+                    <h3 class="course-card-title">{{ course.title }}</h3>
+                    <p class="course-card-author">{{ course.author.get_full_name }}</p>
+
+                    <div class="course-card-footer">
+                        <div class="flex items-center gap-2">
+                            <span class="text-warning">★</span>
+                            <span class="text-sm font-semibold">{{ course.average_rating|floatformat:1 }}</span>
+                            <span class="text-sm text-muted">({{ course.review_count }})</span>
+                        </div>
+                        {% if course.price > 0 %}
+                        <div class="text-lg font-bold text-primary">{{ course.price|floatformat:0 }} UZS</div>
+                        {% else %}
+                        <div class="text-lg font-bold text-success">Free</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-4">
+                <div class="card text-center p-6">
+                    <p class="text-muted">No courses available at the moment.</p>
+                    <a href="{% url 'course_list' %}" class="btn btn-primary mt-4">Browse All Courses</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="animate-fade-in">
+        <h2 class="mb-4">Browse by Category</h2>
+        <div class="grid grid-4">
+            {% for category in categories %}
+            <a href="{% url 'course_list' %}?category={{ category.slug }}" class="card text-center" style="text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">
+                    {% if category.icon and 'http' in category.icon %}
+                    <img src="{{ category.icon }}" alt="{{ category.name }}" style="width: 50px; height: 50px; object-fit: contain;">
+                    {% else %}
+                    {{ category.icon|default:'📚' }}
+                    {% endif %}
+                </div>
+                <h4 class="text-lg font-semibold">{{ category.name }}</h4>
+                <p class="text-sm text-muted">{{ category.courses.count }} courses</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

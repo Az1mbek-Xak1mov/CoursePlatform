@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load course_filters %}
+
+{% block title %}{{ current_lesson.title }} - {{ course.title }} - IlmSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        overflow: hidden;
+    }
+    
+    .learn-container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        height: calc(100vh - 70px);
+    }
+    
+    .video-section {
+        display: flex;
+        flex-direction: column;
+        background: #000;
+    }
+    
+    .video-player {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    
+    .video-player video,
+    .video-player iframe {
+        width: 100%;
+        height: 100%;
+        max-height: calc(100vh - 200px);
+    }
+    
+    .video-placeholder {
+        text-align: center;
+        color: white;
+        padding: var(--space-8);
+    }
+    
+    .video-placeholder h2 {
+        color: white;
+        margin-bottom: var(--space-4);
+    }
+    
+    .lesson-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-4);
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+    }
+    
+    .lesson-nav-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    
+    .lesson-nav-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .lesson-nav-btn:disabled,
+    .lesson-nav-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .complete-btn {
+        background: var(--success);
+        color: white;
+        border-color: var(--success);
+    }
+    
+    .complete-btn:hover {
+        background: #218838;
+    }
+    
+    .complete-btn.completed {
+        background: var(--bg-tertiary);
+        color: var(--success);
+        border-color: var(--success);
+    }
+    
+    /* Sidebar */
+    .course-sidebar-learn {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+        border-left: 1px solid var(--border);
+        overflow: hidden;
+    }
+    
+    .sidebar-header {
+        padding: var(--space-4);
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-secondary);
+    }
+    
+    .sidebar-header h3 {
+        margin: 0 0 var(--space-2);
+        font-size: 1rem;
+    }
+    
+    .course-progress {
+        margin-top: var(--space-3);
+    }
+    
+    .progress-bar-wrapper {
+        height: 6px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--success);
+        transition: width var(--transition-base);
+    }
+    
+    .curriculum-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .module-section {
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .module-header-learn {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-3) var(--space-4);
+        background: var(--bg-secondary);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .module-header-learn:hover {
+        background: var(--bg-tertiary);
+    }
+    
+    .lesson-list {
+        display: none;
+    }
+    
+    .lesson-list.open {
+        display: block;
+    }
+    
+    .lesson-item-learn {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        text-decoration: none;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-light);
+        transition: background var(--transition-fast);
+    }
+    
+    .lesson-item-learn:hover {
+        background: var(--bg-secondary);
+    }
+    
+    .lesson-item-learn.active {
+        background: var(--primary-light-bg);
+        border-left: 3px solid var(--primary);
+    }
+    
+    .lesson-item-learn.completed .lesson-checkbox {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+    }
+    
+    .lesson-item-learn.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .lesson-checkbox {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+    
+    .lesson-info-learn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .lesson-title-learn {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .lesson-meta-learn {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+    }
+    
+    .preview-tag {
+        background: var(--primary-light-bg);
+        color: var(--primary);
+        padding: 1px 6px;
+        border-radius: var(--radius-sm);
+        font-size: 0.65rem;
+    }
+    
+    /* Lesson Content Below Video */
+    .lesson-content {
+        padding: var(--space-5);
+        background: var(--bg-primary);
+        overflow-y: auto;
+        max-height: 300px;
+    }
+    
+    .lesson-content h2 {
+        margin-bottom: var(--space-3);
+    }
+    
+    /* Not Enrolled State */
+    .not-enrolled-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+        padding: var(--space-6);
+    }
+    
+    .not-enrolled-overlay h2 {
+        color: white;
+        margin-bottom: var(--space-3);
+    }
+    
+    .lock-icon {
+        font-size: 4rem;
+        margin-bottom: var(--space-4);
+    }
+    
+    @media (max-width: 900px) {
+        .learn-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        
+        .course-sidebar-learn {
+            border-left: none;
+            border-top: 1px solid var(--border);
+            max-height: 50vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="learn-container">
+    <!-- Video Section -->
+    <div class="video-section">
+        <div class="video-player">
+            {% if can_access and current_lesson %}
+                {% if current_lesson.video_url %}
+                    {% if 'youtube.com' in current_lesson.video_url or 'youtu.be' in current_lesson.video_url %}
+                    <iframe 
+                        src="{{ current_lesson.video_url|replace:'watch?v='|replace:'embed/' }}"
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                    {% elif 'vimeo.com' in current_lesson.video_url %}
+                    <iframe 
+                        src="{{ current_lesson.video_url }}"
+                        frameborder="0" 
+                        allow="autoplay; fullscreen; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                    {% else %}
+                    <video controls>
+                        <source src="{{ current_lesson.video_url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    {% endif %}
+                {% else %}
+                <div class="video-placeholder">
+                    <h2>{{ current_lesson.title }}</h2>
+                    <p>No video available for this lesson</p>
+                </div>
+                {% endif %}
+            {% elif not is_enrolled %}
+            <div class="not-enrolled-overlay">
+                <div class="lock-icon">🔒</div>
+                <h2>Enroll to Access This Lesson</h2>
+                <p class="mb-4">Get full access to all {{ all_lessons|length }} lessons in this course</p>
+                <a href="{% url 'course_enroll' slug=course.slug %}" class="btn btn-primary btn-lg">
+                    {% if course.price > 0 %}
+                    Enroll for {{ course.price|floatformat:0 }} UZS
+                    {% else %}
+                    Enroll for Free
+                    {% endif %}
+                </a>
+            </div>
+            {% else %}
+            <div class="video-placeholder">
+                <h2>Select a lesson to start</h2>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Lesson Controls -->
+        <div class="lesson-controls">
+            <div style="display: flex; gap: var(--space-3);">
+                {% if prev_lesson %}
+                <a href="{% url 'course_lesson' slug=course.slug lesson_id=prev_lesson.id %}" class="lesson-nav-btn">
+                    ← Previous
+                </a>
+                {% else %}
+                <span class="lesson-nav-btn disabled">← Previous</span>
+                {% endif %}
+                
+                {% if next_lesson %}
+                <a href="{% url 'course_lesson' slug=course.slug lesson_id=next_lesson.id %}" class="lesson-nav-btn">
+                    Next →
+                </a>
+                {% else %}
+                <span class="lesson-nav-btn disabled">Next →</span>
+                {% endif %}
+            </div>
+            
+            {% if is_enrolled and current_lesson %}
+            <button 
+                class="lesson-nav-btn complete-btn {% if lesson_progress|default_if_none:''|length > 0 %}{% if current_lesson.id in lesson_progress %}{% if lesson_progress|get_item:current_lesson.id|get_item:'completed' %}completed{% endif %}{% endif %}{% endif %}"
+                onclick="markComplete({{ current_lesson.id }})"
+                id="complete-btn"
+            >
+                <span id="complete-icon">{% if current_lesson.id in lesson_progress %}{% if lesson_progress|get_item:current_lesson.id|get_item:'completed' %}✓{% else %}○{% endif %}{% else %}○{% endif %}</span>
+                <span id="complete-text">{% if current_lesson.id in lesson_progress %}{% if lesson_progress|get_item:current_lesson.id|get_item:'completed' %}Completed{% else %}Mark Complete{% endif %}{% else %}Mark Complete{% endif %}</span>
+            </button>
+            {% endif %}
+        </div>
+        
+        <!-- Lesson Content (if any) -->
+        {% if current_lesson.text_content or current_lesson.attachments %}
+        <div class="lesson-content">
+            <h2>{{ current_lesson.title }}</h2>
+            {% if current_lesson.description %}
+            <p class="text-muted mb-4">{{ current_lesson.description }}</p>
+            {% endif %}
+            {% if current_lesson.text_content %}
+            <div style="white-space: pre-line;">{{ current_lesson.text_content }}</div>
+            {% endif %}
+            {% if current_lesson.attachments %}
+            <div class="mt-4">
+                <a href="{{ current_lesson.attachments.url }}" class="btn btn-secondary" download>
+                    📎 Download Attachments
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Course Curriculum Sidebar -->
+    <div class="course-sidebar-learn">
+        <div class="sidebar-header">
+            <h3>{{ course.title }}</h3>
+            <a href="{% url 'course_detail' slug=course.slug %}" class="text-sm text-primary">View Course Details</a>
+            
+            {% if is_enrolled and enrollment %}
+            <div class="course-progress">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm">Your Progress</span>
+                    <span class="text-sm font-semibold">{{ enrollment.progress_percentage|floatformat:0 }}%</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" style="width: {{ enrollment.progress_percentage }}%;" id="progress-bar"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="curriculum-list">
+            {% for module in modules %}
+            <div class="module-section">
+                <div class="module-header-learn" onclick="toggleModuleLearn(this)">
+                    <span>{{ module.title }}</span>
+                    <span style="font-size: 0.8rem;">{{ module.lessons.count }} lessons</span>
+                </div>
+                <div class="lesson-list {% if current_lesson.module_id == module.id %}open{% endif %}">
+                    {% for lesson in module.lessons.all %}
+                    {% with progress=lesson_progress|default_if_none:'' %}
+                    <a 
+                        href="{% if is_enrolled or lesson.is_preview %}{% url 'course_lesson' slug=course.slug lesson_id=lesson.id %}{% else %}#{% endif %}"
+                        class="lesson-item-learn 
+                            {% if current_lesson.id == lesson.id %}active{% endif %}
+                            {% if lesson.id in lesson_progress %}{% if lesson_progress|get_item:lesson.id|get_item:'completed' %}completed{% endif %}{% endif %}
+                            {% if not is_enrolled and not lesson.is_preview %}locked{% endif %}"
+                    >
+                        <div class="lesson-checkbox">
+                            {% if lesson.id in lesson_progress %}
+                                {% if lesson_progress|get_item:lesson.id|get_item:'completed' %}
+                                ✓
+                                {% else %}
+                                {{ forloop.counter }}
+                                {% endif %}
+                            {% else %}
+                                {% if not is_enrolled and not lesson.is_preview %}
+                                🔒
+                                {% else %}
+                                {{ forloop.counter }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="lesson-info-learn">
+                            <div class="lesson-title-learn">{{ lesson.title }}</div>
+                            <div class="lesson-meta-learn">
+                                <span>{{ lesson.duration_minutes }} min</span>
+                                {% if lesson.is_preview %}
+                                <span class="preview-tag">Preview</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleModuleLearn(header) {
+    const lessons = header.nextElementSibling;
+    lessons.classList.toggle('open');
+}
+
+function markComplete(lessonId) {
+    fetch(`/courses/api/lesson/${lessonId}/complete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const btn = document.getElementById('complete-btn');
+            const icon = document.getElementById('complete-icon');
+            const text = document.getElementById('complete-text');
+            
+            btn.classList.add('completed');
+            icon.textContent = '✓';
+            text.textContent = 'Completed';
+            
+            // Update progress bar
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                progressBar.style.width = data.course_progress + '%';
+            }
+            
+            // Update lesson checkbox in sidebar
+            const lessonItem = document.querySelector(`.lesson-item-learn.active`);
+            if (lessonItem) {
+                lessonItem.classList.add('completed');
+                const checkbox = lessonItem.querySelector('.lesson-checkbox');
+                if (checkbox) {
+                    checkbox.innerHTML = '✓';
+                }
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Open module containing current lesson
+document.addEventListener('DOMContentLoaded', function() {
+    const activeLesson = document.querySelector('.lesson-item-learn.active');
+    if (activeLesson) {
+        const moduleSection = activeLesson.closest('.module-section');
+        if (moduleSection) {
+            moduleSection.querySelector('.lesson-list').classList.add('open');
+        }
+    }
+});
+</script>
+{% endblock %}
