@@ -41,6 +41,39 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check deployment secrets
+        run: |
+          echo "Checking if secrets are available..."
+          if [ -z "${{ secrets.PRODUCTION_SERVER_IP }}" ]; then
+            echo "❌ PRODUCTION_SERVER_IP is EMPTY or not set"
+            echo ""
+            echo "⚠️  You need to add secrets to REPOSITORY settings, not Codespaces!"
+            echo "Go to: https://github.com/Az1mbek-Xak1mov/CoursePlatform/settings/secrets/actions"
+            echo "Click 'New repository secret' and add:"
+            echo "  - PRODUCTION_SERVER_IP"
+            echo "  - PRODUCTION_USER"  
+            echo "  - PRODUCTION_SSH_KEY"
+            exit 1
+          else
+            echo "✅ PRODUCTION_SERVER_IP is set"
+          fi
+
+          if [ -z "${{ secrets.PRODUCTION_USER }}" ]; then
+            echo "❌ PRODUCTION_USER is EMPTY"
+            exit 1
+          else
+            echo "✅ PRODUCTION_USER is set"
+          fi
+
+          if [ -z "${{ secrets.PRODUCTION_SSH_KEY }}" ]; then
+            echo "❌ PRODUCTION_SSH_KEY is EMPTY"
+            exit 1
+          else
+            echo "✅ PRODUCTION_SSH_KEY is set (length: ${#PRODUCTION_SSH_KEY} chars)"
+          fi
+        env:
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
