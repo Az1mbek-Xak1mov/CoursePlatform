@@ -103,7 +103,7 @@ jobs:
             if [ ! -d "/var/www/ilmspace" ]; then
               echo "📁 Creating project directory..."
               sudo mkdir -p /var/www/ilmspace
-              sudo chown $USER:$USER /var/www/ilmspace
+              sudo chown ${{ secrets.PRODUCTION_USER }}:${{ secrets.PRODUCTION_USER }} /var/www/ilmspace
               cd /var/www/ilmspace
               git clone https://github.com/Az1mbek-Xak1mov/CoursePlatform.git .
             else
