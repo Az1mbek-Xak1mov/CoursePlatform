@@ -112,16 +112,19 @@ jobs:
               git pull origin master
             fi
             
-            # Create .env if not exists
+            # Create/update .env file
+            echo "⚙️ Setting up .env file..."
             if [ ! -f ".env" ]; then
-              echo "⚙️ Creating .env file..."
               SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')
-              cat > .env << EOF
+            else
+              # Preserve existing SECRET_KEY if .env exists
+              SECRET_KEY=$(grep -oP 'SECRET_KEY=\K.*' .env || python3 -c 'import secrets; print(secrets.token_urlsafe(50))')
+            fi
+            cat > .env << EOF
             DEBUG=False
             SECRET_KEY=$SECRET_KEY
             ALLOWED_HOSTS=${{ secrets.PRODUCTION_SERVER_IP }},localhost,127.0.0.1
             EOF
-            fi
             
             # Create logs directory
             mkdir -p logs
