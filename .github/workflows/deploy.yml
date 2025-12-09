@@ -138,19 +138,18 @@ jobs:
             echo "🔄 Running migrations..."
             uv run python manage.py migrate --noinput
             
-            # Setup and restart systemd service
-            if [ ! -f "/etc/systemd/system/ilmspace.service" ]; then
-              echo "⚙️ Creating systemd service..."
-              sudo tee /etc/systemd/system/ilmspace.service > /dev/null << EOF
+            # Setup/update systemd service (always update to ensure correct config)
+            echo "⚙️ Updating systemd service..."
+            sudo tee /etc/systemd/system/ilmspace.service > /dev/null << EOF
             [Unit]
             Description=IlmSpace Django Application
             After=network.target
 
             [Service]
-            User=$USER
-            Group=$USER
+            User=${{ secrets.PRODUCTION_USER }}
+            Group=${{ secrets.PRODUCTION_USER }}
             WorkingDirectory=/var/www/ilmspace
-            Environment="PATH=/var/www/ilmspace/.venv/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin"
+            Environment="PATH=/var/www/ilmspace/.venv/bin:/home/${{ secrets.PRODUCTION_USER }}/.local/bin:/usr/local/bin:/usr/bin"
             ExecStart=/var/www/ilmspace/.venv/bin/gunicorn CoursePlatform.wsgi:application --bind 127.0.0.1:8000 --workers 3 --timeout 120
             Restart=always
             RestartSec=3
@@ -158,14 +157,12 @@ jobs:
             [Install]
             WantedBy=multi-user.target
             EOF
-              sudo systemctl daemon-reload
-              sudo systemctl enable ilmspace
-            fi
+            sudo systemctl daemon-reload
+            sudo systemctl enable ilmspace
             
-            # Setup nginx if not configured
-            if [ ! -f "/etc/nginx/sites-available/ilmspace" ]; then
-              echo "⚙️ Creating nginx configuration..."
-              sudo tee /etc/nginx/sites-available/ilmspace > /dev/null << EOF
+            # Setup/update nginx (always update to ensure correct config)
+            echo "⚙️ Updating nginx configuration..."
+            sudo tee /etc/nginx/sites-available/ilmspace > /dev/null << EOF
             server {
                 listen 80;
                 server_name ${{ secrets.PRODUCTION_SERVER_IP }};
@@ -191,10 +188,9 @@ jobs:
                 }
             }
             EOF
-              sudo ln -sf /etc/nginx/sites-available/ilmspace /etc/nginx/sites-enabled/
-              sudo rm -f /etc/nginx/sites-enabled/default
-              sudo nginx -t
-            fi
+            sudo ln -sf /etc/nginx/sites-available/ilmspace /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t
             
             # Restart services
             echo "🔄 Restarting services..."
