@@ -80,26 +80,132 @@ jobs:
           host: ${{ secrets.PRODUCTION_SERVER_IP }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             
-            # Navigate to project directory
-            cd /var/www/ilmspace
+            echo "🚀 Starting deployment..."
             
-            # Pull latest code
-            git pull origin master
+            # Install uv if not present
+            if ! command -v uv &> /dev/null; then
+              echo "📦 Installing uv package manager..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+            
+            # Add uv to PATH for this session
+            export PATH="$HOME/.local/bin:$PATH"
+            
+            # Verify uv is available
+            echo "✅ uv version: $(uv --version)"
+            
+            # Navigate to project directory (create if not exists)
+            if [ ! -d "/var/www/ilmspace" ]; then
+              echo "📁 Creating project directory..."
+              sudo mkdir -p /var/www/ilmspace
+              sudo chown $USER:$USER /var/www/ilmspace
+              cd /var/www/ilmspace
+              git clone https://github.com/Az1mbek-Xak1mov/CoursePlatform.git .
+            else
+              cd /var/www/ilmspace
+              echo "📥 Pulling latest code..."
+              git pull origin master
+            fi
+            
+            # Create .env if not exists
+            if [ ! -f ".env" ]; then
+              echo "⚙️ Creating .env file..."
+              SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')
+              cat > .env << EOF
+            DEBUG=False
+            SECRET_KEY=$SECRET_KEY
+            ALLOWED_HOSTS=${{ secrets.PRODUCTION_SERVER_IP }},localhost,127.0.0.1
+            EOF
+            fi
+            
+            # Create logs directory
+            mkdir -p logs
             
             # Install/update dependencies with uv
-            uv sync --frozen
+            echo "📦 Installing dependencies..."
+            uv sync --frozen || uv sync
             
             # Collect static files
+            echo "📦 Collecting static files..."
             uv run python manage.py collectstatic --noinput
             
             # Run migrations
+            echo "🔄 Running migrations..."
             uv run python manage.py migrate --noinput
             
-            # Restart application
-            sudo systemctl restart ilmspace
-            sudo systemctl restart nginx
+            # Setup and restart systemd service
+            if [ ! -f "/etc/systemd/system/ilmspace.service" ]; then
+              echo "⚙️ Creating systemd service..."
+              sudo tee /etc/systemd/system/ilmspace.service > /dev/null << EOF
+            [Unit]
+            Description=IlmSpace Django Application
+            After=network.target
+
+            [Service]
+            User=$USER
+            Group=$USER
+            WorkingDirectory=/var/www/ilmspace
+            Environment="PATH=/var/www/ilmspace/.venv/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin"
+            ExecStart=/var/www/ilmspace/.venv/bin/gunicorn CoursePlatform.wsgi:application --bind 127.0.0.1:8000 --workers 3 --timeout 120
+            Restart=always
+            RestartSec=3
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+              sudo systemctl daemon-reload
+              sudo systemctl enable ilmspace
+            fi
             
+            # Setup nginx if not configured
+            if [ ! -f "/etc/nginx/sites-available/ilmspace" ]; then
+              echo "⚙️ Creating nginx configuration..."
+              sudo tee /etc/nginx/sites-available/ilmspace > /dev/null << EOF
+            server {
+                listen 80;
+                server_name ${{ secrets.PRODUCTION_SERVER_IP }};
+                
+                client_max_body_size 100M;
+                
+                location /static/ {
+                    alias /var/www/ilmspace/staticfiles/;
+                    expires 30d;
+                }
+                
+                location /media/ {
+                    alias /var/www/ilmspace/media/;
+                    expires 7d;
+                }
+                
+                location / {
+                    proxy_pass http://127.0.0.1:8000;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+            }
+            EOF
+              sudo ln -sf /etc/nginx/sites-available/ilmspace /etc/nginx/sites-enabled/
+              sudo rm -f /etc/nginx/sites-enabled/default
+              sudo nginx -t
+            fi
+            
+            # Restart services
+            echo "🔄 Restarting services..."
+            sudo systemctl restart ilmspace || sudo systemctl start ilmspace
+            sudo systemctl restart nginx || sudo systemctl start nginx
+            
+            # Check service status
+            echo ""
+            echo "📊 Service status:"
+            sudo systemctl status ilmspace --no-pager -l || true
+            
+            echo ""
             echo "✅ Deployment completed successfully!"
+            echo "🌐 Your app is running at: http://${{ secrets.PRODUCTION_SERVER_IP }}"
