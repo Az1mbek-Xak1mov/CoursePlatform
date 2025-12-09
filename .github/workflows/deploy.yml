@@ -102,8 +102,8 @@ jobs:
             # Navigate to project directory (create if not exists)
             if [ ! -d "/var/www/ilmspace" ]; then
               echo "📁 Creating project directory..."
-              sudo mkdir -p /var/www/ilmspace
-              sudo chown $USER:$USER /var/www/ilmspace
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p /var/www/ilmspace
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown $USER:$USER /var/www/ilmspace
               cd /var/www/ilmspace
               git clone https://github.com/Az1mbek-Xak1mov/CoursePlatform.git .
             else
@@ -141,7 +141,7 @@ jobs:
             # Setup and restart systemd service
             if [ ! -f "/etc/systemd/system/ilmspace.service" ]; then
               echo "⚙️ Creating systemd service..."
-              sudo tee /etc/systemd/system/ilmspace.service > /dev/null << EOF
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S tee /etc/systemd/system/ilmspace.service > /dev/null << EOF
             [Unit]
             Description=IlmSpace Django Application
             After=network.target
@@ -158,14 +158,14 @@ jobs:
             [Install]
             WantedBy=multi-user.target
             EOF
-              sudo systemctl daemon-reload
-              sudo systemctl enable ilmspace
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl daemon-reload
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl enable ilmspace
             fi
             
             # Setup nginx if not configured
             if [ ! -f "/etc/nginx/sites-available/ilmspace" ]; then
               echo "⚙️ Creating nginx configuration..."
-              sudo tee /etc/nginx/sites-available/ilmspace > /dev/null << EOF
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S tee /etc/nginx/sites-available/ilmspace > /dev/null << EOF
             server {
                 listen 80;
                 server_name ${{ secrets.PRODUCTION_SERVER_IP }};
@@ -191,20 +191,20 @@ jobs:
                 }
             }
             EOF
-              sudo ln -sf /etc/nginx/sites-available/ilmspace /etc/nginx/sites-enabled/
-              sudo rm -f /etc/nginx/sites-enabled/default
-              sudo nginx -t
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S ln -sf /etc/nginx/sites-available/ilmspace /etc/nginx/sites-enabled/
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -f /etc/nginx/sites-enabled/default
+              echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S nginx -t
             fi
             
             # Restart services
             echo "🔄 Restarting services..."
-            sudo systemctl restart ilmspace || sudo systemctl start ilmspace
-            sudo systemctl restart nginx || sudo systemctl start nginx
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl restart ilmspace || echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl start ilmspace
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl restart nginx || echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl start nginx
             
             # Check service status
             echo ""
             echo "📊 Service status:"
-            sudo systemctl status ilmspace --no-pager -l || true
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S systemctl status ilmspace --no-pager -l || true
             
             echo ""
             echo "✅ Deployment completed successfully!"
