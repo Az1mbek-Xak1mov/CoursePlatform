@@ -33,10 +33,21 @@ ALLOWED_HOSTS = [
 # Add ngrok support for development
 if DEBUG:
     ALLOWED_HOSTS.extend(['.ngrok-free.app', '.ngrok.io'])
+    
+    # Trust all allowed hosts for CSRF
     CSRF_TRUSTED_ORIGINS = [
         'https://*.ngrok-free.app',
         'https://*.ngrok.io',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://0.0.0.0:8000',
     ]
+    
+    # Add any other allowed hosts to trusted origins
+    for host in ALLOWED_HOSTS:
+        if '*' not in host and not host.startswith('.'):
+            CSRF_TRUSTED_ORIGINS.append(f'http://{host}:8000')
+            CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
 
 # =============================================================================
 # APPLICATION DEFINITION
