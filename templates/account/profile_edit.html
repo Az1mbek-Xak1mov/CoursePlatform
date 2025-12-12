@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="background: var(--gradient-primary); color: white;">
+    <div class="container">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="animate-fade-in">Edit Profile ✏️</h1>
+                <p class="text-lg">Update your account information</p>
+            </div>
+            <a href="{% url 'profile' %}" class="btn btn-lg" style="background: white; color: var(--primary);">
+                ← Back to Profile
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-8">
+    <div class="card" style="max-width: 600px; margin: 0 auto; padding: var(--space-8);">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} mb-4">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger mb-4">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <p><strong>{{ field }}:</strong> {{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-2 gap-4 mb-4">
+                <div>
+                    <label for="id_first_name" class="form-label">First Name</label>
+                    <input type="text" 
+                           name="first_name" 
+                           id="id_first_name" 
+                           class="form-input" 
+                           value="{{ form.first_name.value|default:'' }}"
+                           placeholder="Your first name">
+                </div>
+                <div>
+                    <label for="id_last_name" class="form-label">Last Name</label>
+                    <input type="text" 
+                           name="last_name" 
+                           id="id_last_name" 
+                           class="form-input" 
+                           value="{{ form.last_name.value|default:'' }}"
+                           placeholder="Your last name">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="id_email" class="form-label">Email</label>
+                <input type="email" 
+                       name="email" 
+                       id="id_email" 
+                       class="form-input" 
+                       value="{{ form.email.value|default:'' }}"
+                       placeholder="your@email.com">
+            </div>
+
+            <div class="mb-6">
+                <label for="id_age" class="form-label">Age</label>
+                <input type="number" 
+                       name="age" 
+                       id="id_age" 
+                       class="form-input" 
+                       value="{{ form.age.value|default:'' }}"
+                       min="10"
+                       max="120"
+                       placeholder="Your age">
+            </div>
+
+            <div class="flex gap-4">
+                <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">
+                    💾 Save Changes
+                </button>
+                <a href="{% url 'profile' %}" class="btn btn-lg" style="flex: 1;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

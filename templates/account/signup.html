@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Sign Up - IlmSpace{% endblock %}
+
+{% block content %}
+<script>
+    // Redirect to register choice page
+    window.location.href = "{% url 'register_choice' %}";
+</script>
+<div class="py-8" style="min-height: 80vh; display: flex; align-items: center; background: var(--gradient-primary);">
+    <div class="container text-center">
+        <p class="text-white">Redirecting to registration...</p>
+        <a href="{% url 'register_choice' %}" class="btn btn-primary">Click here if not redirected</a>
+    </div>
+</div>
+{% endblock %}

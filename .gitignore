@@ -130,6 +130,24 @@ dmypy.json
 
 # Media files (user uploads)
 media/
+media/**/*
+
+# Uploaded test files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.webp
+*.mp4
+*.webm
+*.avi
+*.mov
+*.mkv
+*.pdf
+
+# But keep static images directory structure
+!static/images/.gitkeep
 
 # Static files collected for production
 staticfiles/

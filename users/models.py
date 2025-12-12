@@ -77,11 +77,27 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampedModel):
         _('email address'),
         blank=True,
         null=True,
-        help_text=_('Optional email address')
+        unique=True,
+        help_text=_('Optional email address for login and notifications')
     )
     
     first_name = models.CharField(_('first name'), max_length=150, blank=True)
     last_name = models.CharField(_('last name'), max_length=150, blank=True)
+    
+    age = models.PositiveIntegerField(
+        _('age'),
+        null=True,
+        blank=True,
+        help_text=_('User age')
+    )
+    
+    telegram_id = models.BigIntegerField(
+        _('telegram ID'),
+        null=True,
+        blank=True,
+        unique=True,
+        help_text=_('Telegram user ID for bot notifications')
+    )
     
     role = models.CharField(
         _('role'),

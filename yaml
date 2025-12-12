@@ -1,0 +1,53 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main  # 1. This triggers the deploy when you push to main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- STEP A: Get Code & Build ---
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Build
+        run: |
+          npm ci
+          npm run build
+          # This creates a 'dist' or 'build' folder. 
+          # ADJUST THIS if your output folder is named differently (e.g., 'public', 'out')
+
+      # --- STEP B: Copy Files to Server (The "Push" Strategy) ---
+      - name: Copy Files to Server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_IP }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: "dist/*"       # Copy the built folder (adjust 'dist' if needed)
+          target: "/var/www/my-project"
+          strip_components: 1    # Removes the parent 'dist' folder so files go directly into target
+
+      # --- STEP C: Restart Server ---
+      - name: Restart Application via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_IP }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            # Reload the app to see changes (Assuming you use PM2 or Systemd)
+            # Example for PM2:
+            # pm2 reload all
+            
+            # Example for Systemd:
+            sudo systemctl restart my-app

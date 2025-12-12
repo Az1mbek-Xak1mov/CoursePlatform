@@ -248,7 +248,7 @@
 <div id="lessonModal" class="modal">
     <div class="modal-content">
         <h3 id="lessonModalTitle">Add Lesson</h3>
-        <form id="lessonForm">
+        <form id="lessonForm" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" id="lessonId" value="">
             <input type="hidden" id="lessonModuleId" value="">
@@ -259,8 +259,22 @@
             <label class="form-label">Description</label>
             <textarea id="lessonDescription" class="form-textarea" rows="2"></textarea>
 
-            <label class="form-label">Video URL *</label>
-            <input type="url" id="lessonVideoUrl" class="form-input" placeholder="https://vimeo.com/..." required>
+            <!-- Video Upload Section -->
+            <div class="card mb-4" style="padding: var(--space-4); background: var(--bg-secondary);">
+                <h4 class="mb-3">📹 Lesson Video</h4>
+                
+                <label class="form-label">Upload Video File (Recommended)</label>
+                <input type="file" id="lessonVideoFile" class="form-input" accept="video/mp4,video/webm,video/ogg" style="padding: var(--space-2);">
+                <p class="text-sm text-muted mb-4">Supported formats: MP4, WebM, OGG (Max 500MB)</p>
+                
+                <div style="text-align: center; margin: var(--space-3) 0; color: var(--text-tertiary);">
+                    — OR —
+                </div>
+                
+                <label class="form-label">Video URL (YouTube/Vimeo)</label>
+                <input type="url" id="lessonVideoUrl" class="form-input" placeholder="https://youtube.com/watch?v=... or https://vimeo.com/...">
+                <p class="text-sm text-muted">Paste a YouTube or Vimeo link as alternative</p>
+            </div>
 
             <label class="form-label">Duration (minutes) *</label>
             <input type="number" id="lessonDuration" class="form-input" min="1" required>
@@ -355,6 +369,7 @@
         document.getElementById('lessonTitle').value = '';
         document.getElementById('lessonDescription').value = '';
         document.getElementById('lessonVideoUrl').value = '';
+        document.getElementById('lessonVideoFile').value = '';
         document.getElementById('lessonDuration').value = '';
         document.getElementById('lessonIsPreview').checked = false;
         document.getElementById('lessonModal').classList.add('show');
@@ -376,13 +391,23 @@
         formData.append('video_url', document.getElementById('lessonVideoUrl').value);
         formData.append('duration_minutes', document.getElementById('lessonDuration').value);
         formData.append('is_preview', document.getElementById('lessonIsPreview').checked);
+        
+        // Handle video file upload
+        const videoFile = document.getElementById('lessonVideoFile').files[0];
+        if (videoFile) {
+            formData.append('video_file', videoFile);
+        }
 
         const url = lessonId ? `/courses/lessons/${lessonId}/edit/` : `/courses/modules/${moduleId}/lessons/add/`;
 
         try {
             const response = await fetch(url, { method: 'POST', body: formData });
             const data = await response.json();
-            if (data.success) location.reload();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Error saving lesson');
+            }
         } catch (error) {
             alert('Error saving lesson');
         }

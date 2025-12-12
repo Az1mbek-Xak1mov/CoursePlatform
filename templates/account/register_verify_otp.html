@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="min-height: 80vh; display: flex; align-items: center; background: var(--gradient-primary);">
+    <div class="container">
+        <div class="card" style="max-width: 450px; margin: 0 auto; padding: var(--space-8);">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold mb-2">🔐 Verify OTP</h1>
+                <p class="text-muted">Enter the code sent to your Telegram</p>
+                <p class="text-sm mt-2" style="color: var(--primary);">{{ phone }}</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="flex justify-center mb-6" style="gap: var(--space-2);">
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mb-4">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger mb-4">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="mb-6">
+                    <label for="id_otp_code" class="form-label">OTP Code</label>
+                    <input type="text" 
+                           name="otp_code" 
+                           id="id_otp_code" 
+                           class="form-input" 
+                           placeholder="000000"
+                           maxlength="6"
+                           pattern="[0-9]{6}"
+                           autocomplete="one-time-code"
+                           style="font-size: 1.5rem; text-align: center; letter-spacing: 0.5rem;"
+                           required>
+                    <small class="text-muted">Enter the 6-digit code from Telegram</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    Verify Code →
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="text-muted text-sm">
+                    Didn't receive the code? 
+                    <a href="{% url 'register_phone' %}" class="text-primary">Try again</a>
+                </p>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'register_choice' %}" class="text-muted">← Back to registration options</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

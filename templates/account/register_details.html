@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Registration - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="min-height: 80vh; display: flex; align-items: center; background: var(--gradient-primary);">
+    <div class="container">
+        <div class="card" style="max-width: 450px; margin: 0 auto; padding: var(--space-8);">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold mb-2">✨ Almost Done!</h1>
+                <p class="text-muted">Tell us a bit about yourself</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="flex justify-center mb-6" style="gap: var(--space-2);">
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mb-4">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger mb-4">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                    {% for field, errors in form.errors.items %}
+                        {% if field != '__all__' %}
+                        {% for error in errors %}
+                            <p><strong>{{ field }}:</strong> {{ error }}</p>
+                        {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-2 gap-4 mb-4">
+                    <div>
+                        <label for="id_first_name" class="form-label">First Name</label>
+                        <input type="text" 
+                               name="first_name" 
+                               id="id_first_name" 
+                               class="form-input" 
+                               placeholder="Your first name"
+                               value="{{ form.first_name.value|default:'' }}"
+                               required>
+                    </div>
+                    <div>
+                        <label for="id_last_name" class="form-label">Last Name</label>
+                        <input type="text" 
+                               name="last_name" 
+                               id="id_last_name" 
+                               class="form-input" 
+                               placeholder="Your last name"
+                               value="{{ form.last_name.value|default:'' }}"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_age" class="form-label">Age</label>
+                    <input type="number" 
+                           name="age" 
+                           id="id_age" 
+                           class="form-input" 
+                           placeholder="Your age"
+                           min="10"
+                           max="120"
+                           value="{{ form.age.value|default:'' }}"
+                           required>
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password1" class="form-label">Password</label>
+                    <input type="password" 
+                           name="password1" 
+                           id="id_password1" 
+                           class="form-input" 
+                           placeholder="Create a password"
+                           minlength="8"
+                           required>
+                    <small class="text-muted">At least 8 characters</small>
+                </div>
+
+                <div class="mb-6">
+                    <label for="id_password2" class="form-label">Confirm Password</label>
+                    <input type="password" 
+                           name="password2" 
+                           id="id_password2" 
+                           class="form-input" 
+                           placeholder="Confirm your password"
+                           minlength="8"
+                           required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    Complete Registration 🎉
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'register_choice' %}" class="text-muted">← Start over</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

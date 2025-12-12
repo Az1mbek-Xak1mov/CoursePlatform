@@ -91,7 +91,7 @@
                     <div class="flex gap-2 mt-4">
                         <a href="{% url 'course_builder' course.id %}"
                             class="btn btn-secondary btn-sm flex-1">Manage</a>
-                        <a href="/courses/{{ course.slug }}/" class="btn btn-ghost btn-sm flex-1">View</a>
+                        <a href="{% url 'course_detail' slug=course.slug %}" class="btn btn-ghost btn-sm flex-1">View</a>
                     </div>
                 </div>
             </div>
@@ -124,13 +124,10 @@
                 <tbody>
                     {% for sale in recent_sales %}
                     <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.created_at|date:"M d,
-                            Y" }}</td>
+                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.created_at|date:"M d, Y" }}</td>
                         <td style="padding: var(--space-3);">{{ sale.course.title }}</td>
-                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.student.get_full_name
-                            }}</td>
-                        <td style="padding: var(--space-3); text-align: right; font-weight: 600;">{{
-                            sale.price_paid|floatformat:0 }} UZS</td>
+                        <td style="padding: var(--space-3); color: var(--text-secondary);">{{ sale.student.get_full_name }}</td>
+                        <td style="padding: var(--space-3); text-align: right; font-weight: 600;">{{ sale.price_paid|floatformat:0 }} UZS</td>
                     </tr>
                     {% endfor %}
                 </tbody>

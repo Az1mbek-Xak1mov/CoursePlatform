@@ -117,7 +117,7 @@ class LessonForm(forms.ModelForm):
     class Meta:
         model = Lesson
         fields = [
-            'title', 'description', 'video_url',
+            'title', 'description', 'video_url', 'video_file',
             'duration_minutes', 'text_content',
             'attachments', 'is_preview'
         ]
@@ -133,7 +133,11 @@ class LessonForm(forms.ModelForm):
             }),
             'video_url': forms.URLInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'https://vimeo.com/... or https://cdn.example.com/video.mp4'
+                'placeholder': 'https://youtube.com/... or https://vimeo.com/...'
+            }),
+            'video_file': forms.FileInput(attrs={
+                'class': 'form-input',
+                'accept': 'video/mp4,video/webm,video/ogg'
             }),
             'duration_minutes': forms.NumberInput(attrs={
                 'class': 'form-input',
@@ -149,6 +153,16 @@ class LessonForm(forms.ModelForm):
                 'class': 'form-checkbox'
             }),
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        video_url = cleaned_data.get('video_url')
+        video_file = cleaned_data.get('video_file')
+        
+        # At least one video source should be provided (or can be empty for text-only lessons)
+        # No validation needed - both can be optional
+        
+        return cleaned_data
 
 
 class HomeworkAssignmentForm(forms.ModelForm):

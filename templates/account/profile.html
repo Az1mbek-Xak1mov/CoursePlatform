@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="background: var(--gradient-primary); color: white;">
+    <div class="container">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="animate-fade-in">My Profile 👤</h1>
+                <p class="text-lg">Manage your account information</p>
+            </div>
+            <a href="{% url 'profile_edit' %}" class="btn btn-lg" style="background: white; color: var(--primary);">
+                ✏️ Edit Profile
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-8">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} mb-4">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-2 gap-6">
+        <!-- Profile Card -->
+        <div class="card" style="padding: var(--space-6);">
+            <div class="text-center mb-6">
+                <div style="width: 120px; height: 120px; background: var(--gradient-primary); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white;">
+                    {{ user.first_name|slice:":1"|upper|default:"U" }}{{ user.last_name|slice:":1"|upper|default:"" }}
+                </div>
+                <h2 class="mt-4 mb-1">{{ user.get_full_name|default:"User" }}</h2>
+                <span class="badge badge-{% if user.role == 'AUTHOR' %}success{% elif user.role == 'ADMIN' %}warning{% else %}primary{% endif %}">
+                    {{ user.get_role_display|default:"Student" }}
+                </span>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex justify-between py-3" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-muted">Email</span>
+                    <span class="font-semibold">{{ user.email|default:"Not set" }}</span>
+                </div>
+                <div class="flex justify-between py-3" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-muted">Phone Number</span>
+                    <span class="font-semibold">
+                        {% if user.phone_number and not user.phone_number|slice:":7" == "+998000" %}
+                            {{ user.phone_number }}
+                            {% if user.phone_verified %}
+                            <span class="text-success">✓</span>
+                            {% endif %}
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between py-3" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-muted">Age</span>
+                    <span class="font-semibold">{{ user.age|default:"Not set" }}</span>
+                </div>
+                <div class="flex justify-between py-3" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-muted">Telegram Connected</span>
+                    <span class="font-semibold">
+                        {% if user.telegram_id %}
+                        <span class="text-success">✓ Connected</span>
+                        {% else %}
+                        <span class="text-muted">Not connected</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between py-3">
+                    <span class="text-muted">Member Since</span>
+                    <span class="font-semibold">{{ user.date_joined|date:"F d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="space-y-4">
+            <div class="card" style="padding: var(--space-6);">
+                <h3 class="mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{% url 'student_home' %}" class="btn" style="width: 100%; justify-content: flex-start; gap: var(--space-3);">
+                        📚 My Learning Dashboard
+                    </a>
+                    {% if user.role == 'AUTHOR' %}
+                    <a href="{% url 'author_home' %}" class="btn" style="width: 100%; justify-content: flex-start; gap: var(--space-3);">
+                        👨‍🏫 Instructor Dashboard
+                    </a>
+                    {% else %}
+                    <form action="{% url 'become_instructor' %}" method="POST" style="width: 100%;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: flex-start; gap: var(--space-3);">
+                            🎓 Become an Instructor
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'course_list' %}" class="btn" style="width: 100%; justify-content: flex-start; gap: var(--space-3);">
+                        🔍 Browse Courses
+                    </a>
+                </div>
+            </div>
+
+            <div class="card" style="padding: var(--space-6);">
+                <h3 class="mb-4">Account Security</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2">
+                        <div>
+                            <strong>Email Verified</strong>
+                            <p class="text-sm text-muted">Status of email verification</p>
+                        </div>
+                        {% if user.email_verified %}
+                        <span class="badge badge-success">Verified</span>
+                        {% else %}
+                        <span class="badge badge-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <div>
+                            <strong>Phone Verified</strong>
+                            <p class="text-sm text-muted">Status of phone verification</p>
+                        </div>
+                        {% if user.phone_verified %}
+                        <span class="badge badge-success">Verified</span>
+                        {% else %}
+                        <span class="badge badge-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: var(--space-6); border: 1px solid var(--danger);">
+                <h3 class="mb-4" style="color: var(--danger);">Danger Zone</h3>
+                <a href="{% url 'account_logout' %}" class="btn" style="width: 100%; background: var(--danger); color: white;">
+                    🚪 Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

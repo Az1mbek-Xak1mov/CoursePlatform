@@ -2,6 +2,7 @@
 Custom template filters for courses app.
 """
 from django import template
+import re
 
 register = template.Library()
 
@@ -44,15 +45,40 @@ def replace(value, args):
 
 
 @register.filter
-def multiply(value, arg):
+def youtube_embed(url):
     """
-    Multiply a value by the argument.
-    Usage: {{ value|multiply:10 }}
+    Convert YouTube URL to embed URL.
+    Handles: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+    Usage: {{ video_url|youtube_embed }}
     """
-    try:
-        return float(value) * float(arg)
-    except (ValueError, TypeError):
-        return 0
+    if not url:
+        return url
+    
+    url = str(url)
+    
+    # Already an embed URL
+    if 'youtube.com/embed/' in url:
+        # Ensure nocookie domain for better iframe support
+        return url.replace('youtube.com', 'youtube-nocookie.com')
+    
+    # Extract video ID from various YouTube URL formats
+    video_id = None
+    
+    # youtube.com/watch?v=VIDEO_ID
+    match = re.search(r'youtube\.com/watch\?v=([a-zA-Z0-9_-]+)', url)
+    if match:
+        video_id = match.group(1)
+    
+    # youtu.be/VIDEO_ID
+    if not video_id:
+        match = re.search(r'youtu\.be/([a-zA-Z0-9_-]+)', url)
+        if match:
+            video_id = match.group(1)
+    
+    if video_id:
+        return f'https://www.youtube-nocookie.com/embed/{video_id}'
+    
+    return url
 
 
 @register.filter

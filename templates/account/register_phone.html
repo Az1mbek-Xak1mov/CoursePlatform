@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Phone Registration - IlmSpace{% endblock %}
+
+{% block content %}
+<div class="py-8" style="min-height: 80vh; display: flex; align-items: center; background: var(--gradient-primary);">
+    <div class="container">
+        <div class="card" style="max-width: 450px; margin: 0 auto; padding: var(--space-8);">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold mb-2">� Registration</h1>
+                <p class="text-muted">Enter your details to register</p>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="flex justify-center mb-6" style="gap: var(--space-2);">
+                <div style="width: 40px; height: 4px; background: var(--primary); border-radius: 2px;"></div>
+                <div style="width: 40px; height: 4px; background: var(--border); border-radius: 2px;"></div>
+            </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} mb-4">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="alert alert-danger mb-4">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <label for="id_phone_number" class="form-label">Phone Number</label>
+                    {{ form.phone_number }}
+                    <small class="text-muted">Format: +998XXXXXXXXX</small>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="id_first_name" class="form-label">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div>
+                        <label for="id_last_name" class="form-label">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_age" class="form-label">Age</label>
+                    {{ form.age }}
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password1" class="form-label">Password</label>
+                    {{ form.password1 }}
+                </div>
+
+                <div class="mb-6">
+                    <label for="id_password2" class="form-label">Confirm Password</label>
+                    {{ form.password2 }}
+                </div>
+
+                <div class="mb-4 p-3" style="background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                    <p class="text-sm mb-2"><strong>📌 Important:</strong></p>
+                    <ol class="text-sm text-muted" style="padding-left: var(--space-4); margin: 0;">
+                        <li>Open our Telegram bot: <a href="https://t.me/ilmspace_bot" target="_blank" class="text-primary">@ilmspace_bot</a></li>
+                        <li>Start the bot by clicking "Start"</li>
+                        <li>Share your phone number when prompted</li>
+                        <li>You'll receive your OTP code in the chat</li>
+                    </ol>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    Next <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+
+            <div class="text-center mt-6">
+                <a href="{% url 'register_choice' %}" class="text-muted">← Back to registration options</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

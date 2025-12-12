@@ -2,35 +2,51 @@
     <div class="container">
         <div class="navbar-content">
             <!-- Brand/Logo -->
-            <a href="{% url 'landing' %}" class="navbar-brand">IlmSpace</a>
+            <a href="{% if user.is_authenticated %}{% url 'student_home' %}{% else %}{% url 'landing' %}{% endif %}" class="navbar-brand">IlmSpace</a>
 
             <!-- Navigation Menu -->
             <ul class="navbar-menu">
-                {% if request.session.selected_role %}
-                {% if request.session.selected_role == 'STUDENT' %}
-                <li><a href="{% url 'student_home' %}"
-                        class="navbar-link {% if request.resolver_match.url_name == 'student_home' %}active{% endif %}">My
-                        Dashboard</a></li>
-                <li><a href="{% url 'course_list' %}" class="navbar-link {% if 'course' in request.resolver_match.url_name %}active{% endif %}">Browse Courses</a></li>
-                {% elif request.session.selected_role == 'AUTHOR' %}
-                <li><a href="{% url 'author_home' %}"
-                        class="navbar-link {% if request.resolver_match.url_name == 'author_home' %}active{% endif %}">Dashboard</a>
-                </li>
-                <li><a href="{% url 'course_create' %}" class="navbar-link {% if request.resolver_match.url_name == 'course_create' %}active{% endif %}">Create Course</a></li>
-                {% elif request.session.selected_role == 'ADMIN' %}
-                <li><a href="{% url 'admin_home' %}"
-                        class="navbar-link {% if request.resolver_match.url_name == 'admin_home' %}active{% endif %}">Dashboard</a>
-                </li>
-                <li><a href="/admin/" class="navbar-link">Admin Panel</a></li>
-                {% endif %}
-
-                <!-- Back to role selection -->
-                <li>
-                    <a href="{% url 'landing' %}" class="btn btn-sm btn-ghost">Change Role</a>
+                {% if user.is_authenticated %}
+                    {% if request.session.selected_role == 'AUTHOR' %}
+                    <li><a href="{% url 'author_home' %}"
+                            class="navbar-link {% if request.resolver_match.url_name == 'author_home' %}active{% endif %}">Instructor Dashboard</a>
+                    </li>
+                    <li><a href="{% url 'course_create' %}" class="navbar-link {% if request.resolver_match.url_name == 'course_create' %}active{% endif %}">Create Course</a></li>
+                    <li><a href="{% url 'student_home' %}" class="navbar-link">Student View</a></li>
+                    {% elif request.session.selected_role == 'ADMIN' %}
+                    <li><a href="{% url 'admin_home' %}"
+                            class="navbar-link {% if request.resolver_match.url_name == 'admin_home' %}active{% endif %}">Admin Dashboard</a>
+                    </li>
+                    <li><a href="/admin/" class="navbar-link">Admin Panel</a></li>
+                    <li><a href="{% url 'student_home' %}" class="navbar-link">Student View</a></li>
+                    {% else %}
+                    <li><a href="{% url 'student_home' %}"
+                            class="navbar-link {% if request.resolver_match.url_name == 'student_home' %}active{% endif %}">My Dashboard</a></li>
+                    <li><a href="{% url 'course_list' %}" class="navbar-link {% if 'course' in request.resolver_match.url_name %}active{% endif %}">Browse Courses</a></li>
+                    {% if user.role == 'AUTHOR' %}
+                    <li><a href="{% url 'author_home' %}" class="navbar-link">Instructor Dashboard</a></li>
+                    {% endif %}
+                    {% endif %}
+                
+                <!-- User dropdown with Profile -->
+                <li style="display: flex; align-items: center; gap: var(--space-3);">
+                    <a href="{% url 'profile' %}" class="navbar-link" style="display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="width: 28px; height: 28px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem;">
+                            {{ user.first_name|slice:":1"|upper|default:"U" }}
+                        </span>
+                        <span class="text-sm">{{ user.first_name|default:user.email|truncatechars:15 }}</span>
+                    </a>
+                    <a href="{% url 'account_logout' %}" class="btn btn-sm btn-ghost">Logout</a>
                 </li>
                 {% else %}
                 <li><a href="{% url 'landing' %}" class="navbar-link">Home</a></li>
                 <li><a href="{% url 'course_list' %}" class="navbar-link">Browse Courses</a></li>
+                <li>
+                    <a href="{% url 'account_login' %}" class="btn btn-sm btn-primary">Login</a>
+                </li>
+                <li>
+                    <a href="{% url 'register_choice' %}" class="btn btn-sm btn-ghost">Sign Up</a>
+                </li>
                 {% endif %}
             </ul>
         </div>

@@ -323,7 +323,16 @@ class Lesson(BaseModel):
     
     video_url = models.URLField(
         _('video URL'),
-        help_text=_('Video URL from streaming service (Vimeo/BunnyCDN)')
+        blank=True,
+        help_text=_('Video URL from streaming service (YouTube/Vimeo/BunnyCDN)')
+    )
+    
+    video_file = models.FileField(
+        _('video file'),
+        upload_to='lessons/videos/',
+        blank=True,
+        null=True,
+        help_text=_('Upload video file directly (MP4 recommended)')
     )
     
     duration_minutes = models.PositiveIntegerField(

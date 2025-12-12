@@ -13,38 +13,11 @@
             </p>
         </div>
 
-        <!-- Role Selection Cards -->
-        <div class="grid grid-2 gap-6 mt-8 animate-slide-in" style="max-width: 800px; margin: 0 auto;">
-            <!-- Student Card -->
-            <a href="{% url 'select_role' 'student' %}" class="card text-center"
-                style="text-decoration: none; padding: var(--space-8); transition: all var(--transition-base);">
-                <div style="font-size: 4rem; margin-bottom: var(--space-4);">👨‍🎓</div>
-                <h2 class="text-2xl font-bold mb-3"
-                    style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                    I'm a Student
-                </h2>
-                <p class="text-muted mb-4">Browse courses, learn new skills, and earn certificates</p>
-                <div class="btn btn-primary btn-lg" style="width: 100%;">Explore Courses →</div>
-            </a>
-
-            <!-- Author Card -->
-            <a href="{% url 'select_role' 'author' %}" class="card text-center"
-                style="text-decoration: none; padding: var(--space-8); transition: all var(--transition-base);">
-                <div style="font-size: 4rem; margin-bottom: var(--space-4);">👨‍🏫</div>
-                <h2 class="text-2xl font-bold mb-3"
-                    style="background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                    I'm an Instructor
-                </h2>
-                <p class="text-muted mb-4">Share your knowledge and earn money teaching online</p>
-                <div class="btn btn-lg" style="width: 100%; background: var(--gradient-accent); color: white;">Start
-                    Teaching →</div>
-            </a>
-        </div>
-
         <div class="text-center mt-8 animate-fade-in" style="color: rgba(255,255,255,0.8);">
-            <p class="text-sm">
-                ℹ️ Authentication will be added soon. For now, select your role to explore the platform.
-            </p>
+            <div class="flex gap-4 justify-center">
+                <a href="{% url 'account_login' %}" class="btn btn-lg" style="background: white; color: var(--primary);">Sign In</a>
+                <a href="{% url 'account_signup' %}" class="btn btn-lg btn-ghost" style="border: 2px solid white; color: white;">Create Account</a>
+            </div>
         </div>
     </div>
 </div>
