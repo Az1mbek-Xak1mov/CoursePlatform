@@ -12,6 +12,7 @@ fi
 
 # Collect static files
 echo "📦 Collecting static files..."
+uv sync
 uv run python manage.py collectstatic --noinput
 
 # Run migrations

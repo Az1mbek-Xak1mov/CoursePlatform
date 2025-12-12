@@ -1,6 +1,4 @@
 import random
-import orjson
-from redis import Redis
 import os
 import requests
 from dotenv import load_dotenv
@@ -35,9 +33,19 @@ def send_telegram_error(message: str):
     except Exception as e:
         print(f"Failed to send Telegram error: {e}")
 
+# Try to import Redis dependencies
+try:
+    import orjson
+    from redis import Redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
 
 class OtpService:
     def __init__(self):
+        if not REDIS_AVAILABLE:
+            raise ImportError("Redis or orjson not installed")
         self.redis_client = Redis.from_url(REDIS_URL, decode_responses=False)
 
     def _otp_key(self, phone: str, purpose: str = "login") -> str:

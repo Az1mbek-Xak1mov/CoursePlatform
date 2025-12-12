@@ -4,13 +4,17 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEBUG=False
+      - DEBUG=True
       - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
       - DATABASE_URL=postgres://postgres:postgres@db:5432/ilmspace
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
@@ -31,6 +35,14 @@ services:
       retries: 5
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
@@ -46,5 +58,6 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   static_volume:
   media_volume:
