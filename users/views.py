@@ -25,10 +25,12 @@ from .forms import (
 
 # Try to import OTP service (may not be available if Redis not configured)
 try:
-    from utils import OtpService, generate_code
+    from utils import OtpService, generate_code, send_telegram_error
     OTP_AVAILABLE = True
 except Exception:
     OTP_AVAILABLE = False
+    def send_telegram_error(msg): pass  # Dummy function if utils fails
+
 
 
 def landing_view(request):
@@ -267,29 +269,36 @@ def register_phone_view(request):
         return redirect('register_choice')
     
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            phone = form.cleaned_data['phone_number']
-            # Strip + for Redis key consistency with Bot
-            phone_key = phone.replace('+', '')
-            
-            # Generate and store OTP and User Data
-            otp_service = OtpService()
-            
-            # Save temp user data
-            success, ttl = otp_service.save_user_temp(phone_key, form.cleaned_data)
-            if not success:
-                 messages.error(request, f"Please try again after {ttl} seconds.")
-                 return render(request, 'account/register_phone.html', {'form': form})
+        try:
+            form = UserRegistrationForm(request.POST)
+            if form.is_valid():
+                phone = form.cleaned_data['phone_number']
+                # Strip + for Redis key consistency with Bot
+                phone_key = phone.replace('+', '')
+                
+                # Generate and store OTP and User Data
+                otp_service = OtpService()
+                
+                # Save temp user data
+                success, ttl = otp_service.save_user_temp(phone_key, form.cleaned_data)
+                if not success:
+                     messages.error(request, f"Please try again after {ttl} seconds.")
+                     return render(request, 'account/register_phone.html', {'form': form})
 
-            code = generate_code(6)
-            otp_service.send_otp(phone_key, code, purpose='register')
-            
-            # Store phone in session for next step
-            request.session['registration_phone'] = phone
-            
-            messages.success(request, f"OTP code sent to your Telegram. Please check your bot.")
-            return redirect('register_verify_otp')
+                code = generate_code(6)
+                otp_service.send_otp(phone_key, code, purpose='register')
+                
+                # Store phone in session for next step
+                request.session['registration_phone'] = phone
+                
+                messages.success(request, f"OTP code sent to your Telegram. Please check your bot.")
+                return redirect('register_verify_otp')
+        except Exception as e:
+            import traceback
+            error_msg = f"Register Phone Error: {str(e)}\n{traceback.format_exc()}"
+            send_telegram_error(error_msg)
+            messages.error(request, "An internal error occurred. The admin has been notified.")
+            return render(request, 'account/register_phone.html', {'form': form if 'form' in locals() else UserRegistrationForm()})
     else:
         form = UserRegistrationForm()
     
@@ -412,34 +421,41 @@ def register_email_view(request):
     if request.user.is_authenticated:
         return redirect('student_home')
     
-    if request.method == 'POST':
-        form = EmailRegistrationForm(request.POST)
-        if form.is_valid():
-            # Generate placeholder phone number
-            placeholder_phone = f"+998{str(uuid.uuid4().int)[:9]}"
-            
-            # Create user
-            user = User.objects.create_user(
-                phone_number=placeholder_phone,
-                password=form.cleaned_data['password1'],
-                email=form.cleaned_data['email'],
-                first_name=form.cleaned_data['first_name'],
-                last_name=form.cleaned_data['last_name'],
-                age=form.cleaned_data['age'],
-                email_verified=True,
-                role=UserRole.STUDENT
-            )
-            
-            # Log the user in
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            request.session['selected_role'] = 'STUDENT'
-            
-            messages.success(request, f"Welcome to IlmSpace, {user.first_name}!")
-            return redirect('student_home')
-    else:
-        form = EmailRegistrationForm()
-    
-    return render(request, 'account/register_email.html', {'form': form})
+    try:
+        if request.method == 'POST':
+            form = EmailRegistrationForm(request.POST)
+            if form.is_valid():
+                # Generate placeholder phone number
+                placeholder_phone = f"+998{str(uuid.uuid4().int)[:9]}"
+                
+                # Create user
+                user = User.objects.create_user(
+                    phone_number=placeholder_phone,
+                    password=form.cleaned_data['password1'],
+                    email=form.cleaned_data['email'],
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    age=form.cleaned_data['age'],
+                    email_verified=True,
+                    role=UserRole.STUDENT
+                )
+                
+                # Log the user in
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                request.session['selected_role'] = 'STUDENT'
+                
+                messages.success(request, f"Welcome to IlmSpace, {user.first_name}!")
+                return redirect('student_home')
+        else:
+            form = EmailRegistrationForm()
+        
+        return render(request, 'account/register_email.html', {'form': form})
+    except Exception as e:
+        import traceback
+        error_msg = f"Register Email Error: {str(e)}\n{traceback.format_exc()}"
+        send_telegram_error(error_msg)
+        messages.error(request, "An internal error occurred. The admin has been notified.")
+        return redirect('register_choice')
 
 
 def login_phone_view(request):

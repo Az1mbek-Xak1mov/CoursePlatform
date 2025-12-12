@@ -2,6 +2,7 @@ import random
 import orjson
 from redis import Redis
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,10 +12,28 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_DB = os.getenv('REDIS_DB', '0')
 REDIS_URL = os.getenv('REDIS_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
-
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+ADMIN_CHAT_ID = "5430618568"
 
 def generate_code(length: int = 6):
     return "".join(str(random.randint(0, 9)) for _ in range(length))
+
+
+def send_telegram_error(message: str):
+    """Sends error message to admin via Telegram."""
+    if not BOT_TOKEN or not ADMIN_CHAT_ID:
+        return
+    
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = {
+            "chat_id": ADMIN_CHAT_ID,
+            "text": f"🚨 Django Error:\n{message}",
+            "parse_mode": "HTML"
+        }
+        requests.post(url, data=data, timeout=5)
+    except Exception as e:
+        print(f"Failed to send Telegram error: {e}")
 
 
 class OtpService:
